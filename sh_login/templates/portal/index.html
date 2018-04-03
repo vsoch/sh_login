@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block content %}
+        <div class="row">
+            <div class="col-sm-5 left-wrapper">
+                <div class="event-banner-wrapper">
+                    <div class="logo">
+                        <h1>Stage</h1>
+                    </div>
+                    <img src="{{ url_for('static',filename='img/expfactoryticketyellow.png') }}" 
+                         style="width:50%; margin-bottom:50px;">
+                    <img src="{{ url_for('static',filename='img/tinypeople.png') }}" 
+                         style="width:100%; position: absolute; bottom: 0px; left:0px">             
+                    <p><a class="expfactory-blue"
+                          style="margin:auto"
+                          href="https://www.github.com/expfactory/expfactory" 
+                          target="_blank"><i class="fa fa-github"></i></a></p>
+                          <div id="littlepieces"></div>
+                </div>
+            </div>
+            <div class="col-sm-7 right-wrapper">
+                <div class="event-ticket-wrapper">
+                    
+                    <div class="event-tab">
+                
+                  <!-- Nav tabs -->
+                  <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="active"><a href="#doExperiments" aria-controls="doExperiments" role="tab" data-toggle="tab">Experiments</a></li>
+                    <li role="presentation"><a href="#resources" aria-controls="resources" role="tab" data-toggle="tab">Resources</a></li>
+                    <li role="presentation"><a href="#termCondition" aria-controls="termCondition" role="tab" data-toggle="tab">Terms & Conditions</a></li>
+                  </ul>
+                
+                  <!-- Experiments Panel -->
+                  <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane fade in active" id="doExperiments">
+                        <div class="row">
+
+                           {% for experiment, metadata in experiments.items() %}
+                            <div class="col-md-6">
+                                <div class="ticketBox" data-ticket-price="50000">
+                                    <div class="inactiveStatus"></div>
+                                    
+                                    <div class="row">
+                                        <div class="col-xs-6">
+                                            <div class="ticket-name">
+                                                {{ experiment }}
+                                                <span><br></span>
+                                            </div>
+                                        </div>                                    
+                                        <div class="col-xs-6">
+                                            <div class="ticket-price-count-box">
+                                                <div class="ticket-control">
+                                                    <div class="input-group">
+                                                      <span class="input-group-btn">
+                                                          <button type="button" 
+                                                                  class="btn btn-default btn-number experiment-select-button experiment-unselected" 
+                                                                  id="{{ experiment }}"
+                                                                  {% if metadata.time %}
+                                                                  data-time="{{ metadata.time }}"
+                                                                  {% else %}
+                                                                  data-time="0"
+                                                                  {% endif %}
+                                                                  data-type="plus" 
+                                                                  style="float:right">
+                                                              <span class="fa fa-check"></span>
+                                                          </button>
+                                                      </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="ticket-description">
+                                        {% if metadata.exp_id %}<p><strong>Expfactory ID: </strong>{{ metadata.exp_id }}</p>{% endif %}
+                                        {% if metadata.time %}<p><strong>Time</strong>: {{ metadata.time }} minutes</p>{% endif %}
+                                        {% if metadata.template %}<p><strong>Template: </strong>{{ metadata.template }}</p>{% endif %}
+                                        {% if metadata.url %}<p><a href="{{ metadata.url }}" target="_blank"><i class="fa fa-link"></i></a></p>{% endif %}
+                                        {% if metadata.description %}<hr><p><strong>Description: </strong>{{ metadata.description }}</p>{% endif %}
+                                    </div>                                            
+                                </div>
+                            </div>
+                           {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Resources Tab -->
+                    <div role="tabpanel" class="tab-pane fade" id="resources">
+                        {% include "portal/resources.html" %}
+                    </div>
+
+                    <!-- Terms Tab -->
+                    <div role="tabpanel" class="tab-pane fade" id="termCondition">
+                        {% include "portal/terms.html" %}
+                    </div>
+                  </div>
+                
+                </div>
+                
+                    <div class="cart">
+                <div class="row">
+                    <div class="col-xs-6">
+                        <p> 
+                            <span class="ticket-count">0</span> Experiments <span class="divider"></span> Time: <span class="total-amount">0</span></p>
+                    </div>
+                    <div class="col-xs-6">
+                        <div>
+                            <a class="btn" style="float:left" id="select-button"><i class="fa fa-check"></i></a>
+                            <a class="btn text-right" 
+                               style="float:right"
+                               data-toggle="modal"
+                               data-target="#ticket-details">PROCEED</a>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                       
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal right fade" id="ticket-details" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <img src="{{ url_for('static',filename='img/icons/cancel.png') }}">
+                   </button>
+                   <h4 class="modal-title">Your Battery</h4>
+               </div>
+               <div class="modal-body">     
+                   <div class="contactForm">    
+                       <h3>Participant Details</h3>
+
+                       <form action="" method="POST" name='form'>
+                          {{ form.hidden_tag() }}
+
+                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                           <input type="hidden" id= "exp_ids" name="exp_ids" value=""/>
+
+                           <div class="form-group">
+                               <input id='openid' 
+                                      type="text" 
+                                      class="form-control" 
+                                      name='openid'
+                                      placeholder="Enter your Name (optional)">
+                           </div>
+
+                           {% for error in form.openid.errors %}
+                               <span style="color: red;">[{{ error }}]</span>
+                           {% endfor %}<br>
+
+                           {% for error in form.exp_ids.errors %}
+                               <span style="color: red;">You must select one or more experiments.</span>
+                           {% endfor %}<br>
+
+                           <div class="form-check" style='padding-bottom:20px'>
+                               <label class="form-check-label">
+                                   {% if randomize %}
+                                   <input id="randomize" name="randomize" type="checkbox" value="y" checked>
+                                   {% else %}
+                                   <input id="randomize" name="randomize" type="checkbox" value="y">
+                                   {% endif %}
+                                      Random Order
+                                   </label>
+                           </div>
+
+                           <!-- Interactive changing of order -->
+                           <ul class="list-group" id="order-list">
+                           </ul>
+                          <p style="margin-top:20px"><input type="submit" class="btn"></p>
+                       </form>
+
+                   </div>
+               </div>
+           </div>
+       </div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+$(document).ready(function(){
+
+    var order = 0;
+
+    function unselect_experiment(button) {
+        $(button).removeClass('experiment-selected')
+        $(button).addClass('experiment-unselected');
+        $(button).css('background-color', "rgba(0, 0, 0, 0.09)");
+    }
+
+    function select_experiment(button) {
+        $(button).removeClass('experiment-unselected');
+        $(button).addClass('experiment-selected');
+        $(button).css('background-color',"#2dc330");
+    }
+
+    // When randomize selected, hide ordering
+    $('#randomize').change(function(){
+       if ($('#randomize:checked').length > 0) {
+         $('#order-list').hide();
+       } else {
+         $('#order-list').show();
+       }
+    })
+
+    function update_form() {
+
+        // Update exp_ids in form with selected experiments
+        var ordered = $('.experiment-selected').sort(function (a, b) {
+            var contentA = parseInt( $(a).attr('data-order'));
+            var contentB = parseInt( $(b).attr('data-order'));
+            return (contentA < contentB) ? -1 : (contentA > contentB) ? 1 : 0;
+        })
+
+        $('#order-list').html('');
+
+        var experiments = ""
+        var total_time = 0
+        $.each(ordered, function(e,i){
+            new_experiment = $(i).attr('id');
+            new_time = parseInt($(i).attr('data-time'),10);
+            if (new_experiment != "select-button") {
+                if (experiments == "") {
+                    experiments =  new_experiment;
+                } else {
+                    experiments =  experiments + "," + new_experiment;
+                }
+
+            // Update the ordered list for the user
+            new_listing = '<li class="list-group-item justify-content-between">' + new_experiment
+            new_listing += '<span class="ordering badge badge-default badge-pill"' 
+            new_listing += '>' + parseInt(e+1) + '</span></li>'
+            $('#order-list').append(new_listing)
+
+            total_time = total_time + new_time;
+            }
+        })
+        $("#exp_ids").val(experiments);
+        $('.ticket-count').text(ordered.length);
+        $('.total-amount').text(total_time + ' min');
+
+    }
+    
+    $('#select-button').click(function(){
+        var choices = $('.experiment-select-button');
+        if ($(this).hasClass('experiment-selected')){
+            unselect_experiment(this);
+            unselect_experiment(choices)
+        } else {
+            select_experiment(this);
+            select_experiment(choices)
+       }
+       update_form()
+
+    });
+
+    {% if toggleform %}
+        $("#ticket-details").modal('show');
+    {% endif %}
+
+    $(".experiment-select-button").click(function(){
+        if ($(this).hasClass('experiment-selected')){
+            unselect_experiment(this);
+            $(this).attr('data-order', 0)
+            console.log('Experiment unselected, order is ' + order)
+            order=order-1;
+        } else {
+            order = order + 1;
+            $(this).attr('data-order', order)
+            console.log('Experiment selected, order is ' + order)
+            select_experiment(this);
+       }
+
+       update_form()
+    })
+})
+</script>
+{% include "portal/littlepieces.html" %}
+{% endblock %}
