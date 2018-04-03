@@ -81,6 +81,6 @@ def headless_denied(form=None):
     '''denied entry view for headliness'''
     if form is None:
         form = EntryForm()
-    message = "A valid token is required. Contact the experiment administrator if you believe this to be a mistake."
+    message = "A valid token is required. Contact the administrator if you believe this to be a mistake."
     return render_template('routes/entry.html', form=form,
                                                 message=message)

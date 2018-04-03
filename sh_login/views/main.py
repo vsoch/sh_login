@@ -107,15 +107,6 @@ def next(path):
     response = redirect('/')
     response.headers['sh-login-token'] = token
     response.headers['http-sh-login-token'] = token
-    #response.direct_passthrough=True
-    #response = make_response(redirect('/entrypoint'), 301, {'sh_login_token': '"%s"' %token})
-    print(response)
-    print(response.__dict__)
-    #response = redirect('/entrypoint' ,'/entrypoint', {'sh-login-token', token})
-    #response.headers.set('sh-login-token', token)
-    #response.headers.set('sh_login_token', token)
-    #response.headers.set('http_sh_login_token', token)
-    #response.headers.set('http-sh-login-token', token)
     return response
    
 
