@@ -19,7 +19,10 @@ the entrypoint to `vanessa/sh_login` with that port defined.  A dummy example
 is provided via [hello-world](examples/hello-world).  For this example, we build 
 a docker image (with `vanessa/sh_login` as the base) that is rather stupid, it
 just starts a local web server on port 8787, and then runs the entrypoint 
-provided by `vanessa/sh_login`. The user interaction looks like this:
+provided by `vanessa/sh_login`. 
+
+### Interface
+The user interaction looks like this:
 
 The container is started in some terminal environment. Here is where the
 token (and optionally port) are generated on the fly, and shown to the user.
@@ -43,6 +46,8 @@ Then when the token is present, the user is taken to the protected port:
 
 ![examples/img/token-correct.png](examples/img/token-correct.png)
 
+
+### Internal Flow
 
 The flow then works like this:
 
