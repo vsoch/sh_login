@@ -40,12 +40,6 @@ while true; do
             SH_LOGIN_START="yes"
             shift
         ;;
-        -t|--token|token)
-            shift
-            SH_LOGIN_TOKEN="${1:-}"
-            export SH_LOGIN_TOKEN
-            shift
-        ;;
         -p|--port|port)
             shift
             SH_LOGIN_PORT="${1:-}"
@@ -72,9 +66,9 @@ function prepare_nginx() {
     TOKEN=$2
     template=$(mktemp /tmp/sh_login.XXXXXX)
     cp /code/script/nginx/nginx.gunicorn.conf $template
-    sed -i -e 's/SH_LOGIN_PORT/${PORT}/g' $template
-    sed -i -e 's/SH_LOGIN_TOKEN/${TOKEN}/g' $template
-    mv $template /etc/nginx/nginx.conf
+    sed -i -e 's/SUB_PORT_SUB/'${PORT}'/g' $template
+    sed -i -e 's/SUB_TOKEN_SUB/'${TOKEN}'/g' $template
+    mv $template /etc/nginx/sites-enabled/default
 }
 
 

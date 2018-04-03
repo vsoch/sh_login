@@ -5,7 +5,7 @@ MAINTAINER vsochat@stanford.edu
 
 RUN apt-get update
 RUN apt-get -y install apt-utils cmake wget unzip libffi-dev libssl-dev \
-                       vim nginx nginx-extras
+                       vim nginx nginx-extras uuid-runtime
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV LC_ALL C.UTF-8
