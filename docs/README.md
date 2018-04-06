@@ -52,24 +52,24 @@ The user interaction looks like this:
 The container is started in some terminal environment. Here is where the
 token (and optionally port) would be generated, and shown to the user.
 
-![examples/img/terminal.png](examples/img/terminal.png)
+![img/terminal.png](img/terminal.png)
 
 Starting the container and going to localhost shows a login screen requesting
 a token.
 
-![examples/img/login.png](examples/img/login.png)
+![img/login.png](img/login.png)
 
 The user now needs to enter the token they just saw.
 
-![examples/img/token.png](examples/img/token.png)
+![img/token.png](img/token.png)
 
 If the token is wrong here, no go.
 
-![examples/img/token-wrong.png](examples/img/token-wrong.png)
+![img/token-wrong.png](img/token-wrong.png)
 
 Then when the token is present, the user is taken to the protected port:
 
-![examples/img/token-correct.png](examples/img/token-correct.png)
+![img/token-correct.png](img/token-correct.png)
 
 
 ### Internal Flow
