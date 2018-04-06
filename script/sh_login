@@ -1,0 +1,247 @@
+#!/bin/bash
+
+usage () {
+
+    echo "Usage:
+          When starting the application, provide a port, and a token protected
+              portal will be generated at the port.
+
+              sh_login [start|help]
+              sh_login start --nginx 5080 --port 8888 --SH_LOGIN_TMPDIR /tmp/nginx
+
+          Commands:
+             help: show help and exit
+             start: the application
+
+          Ports:              
+           --cmd:   command to run after server wrapper started
+           --port:  the port for the application (e.g., Rstudio default is 8787)
+                    this port cannot be 5000, as this is the port flask uses
+           --nginx: the port for nginx to listen, must be outside roots range
+           --flask: the port to run the flask appliction controller
+
+          Options: 
+           --token: a token to give the application, vs. having one produced
+                    at runtime by the application.
+           --SH_LOGIN_TMPDIR: a temporary writable directory for nginx. You don't have 
+                     to specify this, but if you do when using a container you
+                     can also bind /var/log/nginx to it and not need to create
+                     two temporary directories.
+         "
+}
+
+# Start the application
+SH_LOGIN_START="no";
+
+# Port for Flask
+SH_LOGIN_FLASK_PORT=$(tr -cd 0-9 </dev/urandom | head -c 4);
+
+# Secret token to give to user
+SH_LOGIN_TOKEN=$(uuidgen -r);
+
+# Port for application to run
+SH_LOGIN_PORT=$(tr -cd 0-9 </dev/urandom | head -c 4);
+
+# Default nginx server port must be over 1200
+SH_LOGIN_NGINX=$(tr -cd 0-9 </dev/urandom | head -c 4);
+
+# Temporary directory for nginx and for user bind (needs writable)
+SH_LOGIN_TMPDIR=$(mktemp -d /tmp/sh_login.XXXXXX) && rmdir ${SH_LOGIN_TMPDIR};
+
+SH_LOGIN_CMD=""
+
+if [ $# -eq 0 ]; then
+    usage
+    exit
+fi
+
+while true; do
+    case ${1:-} in
+        -h|--help|help)
+            usage
+            exit
+        ;;
+        -s|--start|start)
+            SH_LOGIN_START="yes"
+            shift
+        ;;
+        -c|--cmd|cmd)
+            shift
+            SH_LOGIN_CMD="${1:-}"
+            shift
+        ;;
+        -p|--port|port)
+            shift
+            SH_LOGIN_PORT="${1:-}"
+            shift
+        ;;
+        -f|--flask|flask)
+            shift
+            SH_LOGIN_FLASK_PORT="${1:-}"
+            shift
+        ;;
+        -n|--nginx|nginx)
+            shift
+            SH_LOGIN_NGINX="${1:-}"
+            shift
+        ;;
+        -tp|tmpdir|--tmpdir)
+            shift
+            SH_LOGIN_TMPDIR="${1:-}"
+            shift
+        ;;
+        -t|token|--token)
+            shift
+            SH_LOGIN_TOKEN="${1:-}"
+            shift
+        ;;
+        -*)
+            echo "Unknown option: ${1:-}"
+            exit 1
+        ;;
+        *)
+            break
+        ;;
+    esac
+done
+
+# A token is required
+
+# Export these to give to flask application
+export SH_LOGIN_PORT SH_LOGIN_NGINX SH_LOGIN_FLASK_PORT
+
+# Functions
+
+function prepare_nginx() {
+    APP_PORT=$1
+    TOKEN=$2
+    NGINX_PORT=$3
+    SH_LOGIN_TMPDIR=$4
+    FLASK=$5
+    NGINX="
+worker_processes auto;
+
+events {
+    worker_connections 768;
+    # multi_accept on;
+}
+
+http {
+
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # Dropping SSLv3, ref: POODLE
+    ssl_prefer_server_ciphers on;
+
+    gzip on;
+    gzip_disable \"msie6\";
+
+    scgi_temp_path ${SH_LOGIN_TMPDIR} 1 2;
+    uwsgi_temp_path ${SH_LOGIN_TMPDIR} 1 2;
+    fastcgi_temp_path ${SH_LOGIN_TMPDIR} 1 2;
+    proxy_temp_path ${SH_LOGIN_TMPDIR} 1 2;
+    client_body_temp_path ${SH_LOGIN_TMPDIR} 1 2;
+    client_body_buffer_size 256k;
+    client_body_in_file_only off;
+    
+    server {
+
+        listen ${NGINX_PORT};
+
+        server_name _;
+
+        access_log ${SH_LOGIN_TMPDIR}/nginx-access.log;
+        error_log ${SH_LOGIN_TMPDIR}/nginx-error.log;
+
+        location / {
+
+            if (\$http_sh_login_token = '${TOKEN}') { 
+                rewrite ^/(.*) /\$1 break;
+                proxy_pass         http://127.0.0.1:${APP_PORT};
+            }
+
+            proxy_pass         http://127.0.0.1:${FLASK}/;
+            proxy_redirect     off;
+
+            proxy_set_header   Host                 \$host;
+            proxy_set_header   X-Real-IP            \$remote_addr;
+            proxy_set_header   X-Forwarded-For      \$proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto    \$scheme;
+
+        }
+
+    }
+
+}"
+    echo "${NGINX}";
+}
+
+
+# Are we starting the server?
+
+if [ "${SH_LOGIN_START}" == "yes" ]; then
+
+    # Export for flask server subprocess
+    export SH_LOGIN_TOKEN SH_LOGIN_PORT;
+
+    echo "Generating shell login portal...";
+    echo "port: ${SH_LOGIN_PORT}";
+    echo "logs:" ${SH_LOGIN_TMPDIR};
+    echo "nginx: ${SH_LOGIN_NGINX}";
+    echo "token: ${SH_LOGIN_TOKEN}";
+
+    # Prepare the template
+    
+    NGINX=$(prepare_nginx ${SH_LOGIN_PORT} ${SH_LOGIN_TOKEN} ${SH_LOGIN_NGINX} ${SH_LOGIN_TMPDIR} ${SH_LOGIN_FLASK_PORT});
+    
+    # Temporary directory, if doesn't exist
+    if [ ! -d "${SH_LOGIN_TMPDIR}" ]; then
+        mkdir -p ${SH_LOGIN_TMPDIR};
+    fi
+
+    # Configuration file
+    NGINXCONF="${SH_LOGIN_TMPDIR}/nginx.conf";
+    echo "${NGINX}" > "${NGINXCONF}";
+    echo "Server logging will be in ${SH_LOGIN_TMPDIR}";
+    echo
+
+    # PID
+    NGINXPID="${SH_LOGIN_TMPDIR}/nginx.pid";
+    
+    # Start the web server
+    echo "Testing nginx configuration...";
+    /usr/sbin/nginx -t -c ${NGINXCONF} -g "pid ${NGINXPID};";
+    echo
+    /usr/sbin/nginx -c ${NGINXCONF} -g "pid ${NGINXPID};";
+    echo "Nginx running at http://127.0.0.1:${SH_LOGIN_NGINX}";
+
+    # service nginx start
+    touch "${SH_LOGIN_TMPDIR}/gunicorn.log";
+    touch "${SH_LOGIN_TMPDIR}/gunicorn-access.log";
+    /opt/conda/bin/gunicorn sh_login.wsgi:app \
+                  --bind 0.0.0.0:${SH_LOGIN_FLASK_PORT} \
+                  --workers 5 \
+                  --log-level=info \
+                  --timeout 900 \
+                  --log-file="${SH_LOGIN_TMPDIR}/gunicorn.log" \
+                  --access-logfile="${SH_LOGIN_TMPDIR}/gunicorn-access.log" &
+
+    # This command should keep the container running
+    ${SH_LOGIN_CMD} &&
+
+    # simple manual command could be
+    # service nginx start
+    # /opt/conda/bin/gunicorn -w 2 -b 0.0.0.0:5000 --timeout 900 --log-level debug sh_login.wsgi:app
+    # service nginx restart
+
+    nginx -s stop
+    exit
+else
+    usage
+fi
