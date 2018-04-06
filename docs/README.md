@@ -17,7 +17,7 @@ can then be used for sub-applications that add some custom webby thing.
 For example, we might add a jupyter notebook or rstudio server, and then use the
 sh_login container to wrap it.
 
- - [Singularity](singularity) reviews issues with Singularity
+ - [Singularity](singularity)
  - [Docker](docker)
 
 ### Environment
