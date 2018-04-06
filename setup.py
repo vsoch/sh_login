@@ -17,6 +17,7 @@ def get_lookup():
         exec(filey.read(), lookup)
     return lookup
 
+
 # Read in requirements
 def get_requirements(lookup=None):
     '''get_requirements reads in requirements and versions from
@@ -93,4 +94,5 @@ if __name__ == "__main__":
               'Operating System :: Unix',
               'Programming Language :: Python :: 2.7',
               'Programming Language :: Python :: 3',
-          ])
+          ],
+          scripts=['script/sh_login'])

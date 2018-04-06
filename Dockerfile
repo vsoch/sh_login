@@ -19,11 +19,12 @@ WORKDIR /code
 
 # Set up nginx
 RUN cp /code/script/nginx/nginx.conf /etc/nginx/nginx.conf && \
-    cp /code/script/nginx/nginx.gunicorn.conf /etc/nginx/sites-enabled/default && \
-    chmod u+x /code/script/entrypoint.sh && \
+    chmod u+x /code/script/sh_login && \
     cp /code/sh_login/config_dummy.py /code/sh_login/config.py && \
     chmod u+x /code/script/generate_key.sh && \
-    /bin/bash /code/script/generate_key.sh /code/sh_login/config.py
+    /bin/bash /code/script/generate_key.sh /code/sh_login/config.py && \
+    chmod a+w /var/log/nginx/access.log /var/log/nginx/error.log && \
+    service nginx start # just to generate /run/nginx.pid
 
 RUN /opt/conda/bin/python setup.py install && \
     /opt/conda/bin/pip install --upgrade pip && \
@@ -34,6 +35,6 @@ RUN apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ENTRYPOINT ["/bin/bash", "/code/script/entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/opt/conda/bin/sh_login"]
 EXPOSE 5000
 EXPOSE 80
